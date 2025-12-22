@@ -1,13 +1,20 @@
 import re
 
-def parse_mesnagem(texto : str) -> dict | None:
-    if not texto.startswith("/enviar"):
-        return None
+def parse_mensagem(texto: str):
 
-    doc = re.search(r"CPF\/CNPJ:\s*(.*)", texto, re.I)
-    if not (doc):
-        return None
+    numeros = re.sub(r"\D", "", texto)
+
+    if len(numeros) == 11:
+        return {
+            "TipoDocumento": "CPF",
+            "Documento": numeros
+        }
+
+    if len(numeros) == 14:
+        return {
+            "TipoDocumento": "CNPJ",
+            "Documento": numeros
+        }
     
-    return {
-        "Documento" : doc.group(1).strip(),
-    }
+
+    return None
