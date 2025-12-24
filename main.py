@@ -5,24 +5,24 @@ from config.settings import ARQUIVO_EXCEL, DELAY_LEITURA
 import time
 
 def main():
-    #inicia o navegador e abre o zap web
+    # inicia o navegador e abre o whatsapp web
     driver = iniciar_driver()
 
     try:
-    #aguarda login e abertura do grupo
+        # aguarda login e abertura manual do grupo
         aguardar_login(driver)
 
-    #carrega documentos salvos no Excel (evita duplicacao)
+        # carrega documentos ja salvos no excel
         documentos_lidos = carregar_documentos_lidos(ARQUIVO_EXCEL)
 
-    #lista para armazenar novos registros
+        # lista para armazenar novos registros
         novos_dados = []
 
-    #le todas as mensagens visiveis do chat
+        # le as mensagens do chat
         mensagens = ler_mensagens(driver)
-        print(f"Mensagens encontradas: {len(mensagens)}")
+        print(f"mensagens encontradas: {len(mensagens)}")
 
-        # processa mensagem por mensagem
+        # processa cada mensagem
         for msg in mensagens:
             texto = msg.text.strip()
 
@@ -33,31 +33,34 @@ def main():
             # tenta extrair dados da mensagem
             dados = parse_mensagem(texto)
 
-            #ignora mensagens fora do padrao
+            # ignora mensagens fora do padrao
             if not dados:
                 continue
 
             documento = dados["Documento"]
 
-            #ignora documentos ja processados
+            # evita salvar documentos repetidos
             if documento in documentos_lidos:
                 continue
 
-            #salva novo registro
+            # adiciona novo registro
             novos_dados.append(dados)
             documentos_lidos.add(documento)
 
-            #pausa para evitar leitura rapida demais
+            # pausa entre leituras
             time.sleep(DELAY_LEITURA)
 
-        #salva os novos registros no Excel
+        # salva os novos registros no excel
         total = salvar_registros(ARQUIVO_EXCEL, novos_dados)
 
         if total:
             print(f"{total} registros salvos com sucesso")
         else:
-            print("Nenhum novo registro encontrado")
+            print("nenhum novo registro encontrado")
 
     finally:
         # garante que o navegador sera fechado
         driver.quit()
+
+if __name__ == "__main__":
+    main()
