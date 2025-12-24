@@ -5,38 +5,59 @@ from config.settings import ARQUIVO_EXCEL, DELAY_LEITURA
 import time
 
 def main():
+    #inicia o navegador e abre o zap web
     driver = iniciar_driver()
-    aguardar_login(driver)
 
-    documentos_lidos = carregar_documentos_lidos(ARQUIVO_EXCEL)
-    novos_dados = []
+    try:
+    #aguarda login e abertura do grupo
+        aguardar_login(driver)
 
-    mensagens = ler_mensagens(driver)
-    print(f"Mensagens encontradas: {len(mensagens)}")
+    #carrega documentos salvos no Excel (evita duplicacao)
+        documentos_lidos = carregar_documentos_lidos(ARQUIVO_EXCEL)
 
-    for msg in mensagens:
-        texto = msg.text.strip()
+    #lista para armazenar novos registros
+        novos_dados = []
 
-        dados = parse_mensagem(texto)
-        if not dados:
-            continue
+    #le todas as mensagens visiveis do chat
+        mensagens = ler_mensagens(driver)
+        print(f"Mensagens encontradas: {len(mensagens)}")
 
-        if dados["Documento"] in documentos_lidos:
-            continue
+        # processa mensagem por mensagem
+        for msg in mensagens:
+            texto = msg.text.strip()
 
-        novos_dados.append(dados)
-        documentos_lidos.add(dados["Documento"])
+            # ignora mensagens vazias
+            if not texto:
+                continue
 
-        time.sleep(DELAY_LEITURA)
+            # tenta extrair dados da mensagem
+            dados = parse_mensagem(texto)
 
-    total = salvar_registros(ARQUIVO_EXCEL, novos_dados)
+            #ignora mensagens fora do padrao
+            if not dados:
+                continue
 
-    if total:
-        print(f"{total} registros salvos com sucesso")
-    else:
-        print("Nenhum novo registro encontrado")
+            documento = dados["Documento"]
 
-    driver.quit()
+            #ignora documentos ja processados
+            if documento in documentos_lidos:
+                continue
 
-if __name__ == "__main__":
-    main()
+            #salva novo registro
+            novos_dados.append(dados)
+            documentos_lidos.add(documento)
+
+            #pausa para evitar leitura rapida demais
+            time.sleep(DELAY_LEITURA)
+
+        #salva os novos registros no Excel
+        total = salvar_registros(ARQUIVO_EXCEL, novos_dados)
+
+        if total:
+            print(f"{total} registros salvos com sucesso")
+        else:
+            print("Nenhum novo registro encontrado")
+
+    finally:
+        # garante que o navegador sera fechado
+        driver.quit()
